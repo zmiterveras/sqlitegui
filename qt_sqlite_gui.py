@@ -128,9 +128,12 @@ class MyWorkWindow(QtWidgets.QWidget):
         text = 'Ответ:' if not self.error else self.error
         self.vbottom.addWidget(QtWidgets.QLabel('Запрос: '+ self.query))
         self.vbottom.addWidget(QtWidgets.QLabel(text))
-        if self.col:
-            col_name = ' | '.join(self.col)
-            response.insert(0, col_name)
+        if not response:
+            response = ['Ничего не найдено или синтксис запроса не поддерживается']
+        else:
+            if self.col:
+                col_name = ' | '.join(self.col)
+                response.insert(0, col_name)
         self.lv = QtWidgets.QListView()
         slm = QtCore.QStringListModel(response)
         self.lv.setModel(slm)
@@ -176,23 +179,48 @@ class MyWorkWindow(QtWidgets.QWidget):
         if not self.error: self.parse_query()
         self.make_bottomframe(response)
         self.ent.setText('')
-        
+    
+    def save_DB(self):
+        pass
+            
     def parse_query(self):
+        def within_parse(colon):
+            check_list = ['*', '/', '-', '+', '|']
+            answ = False
+            res_check = False
+            for j in check_list:
+                    if j in colon:
+                        answ = True
+                        res_check = True
+                        break
+            if 'as' in colon.split(' '):
+                        name = colon.split(' ')[-1]
+                        self.col.append(name)
+                        answ = True
+            else:
+                if res_check:
+                    self.col.append('time_col')
+            return answ
+            
         low = self.query.lower()
         if low.startswith('select'):
             st = self.query.find('from')
-            if '*' in self.query:
+            parse_part = self.query[6:st].strip()
+            parse_list = parse_part.split(',')
+            if '*' == parse_list[0].strip():
                 tab_n = self.query[st:].split()[1]
                 col_cur = self.curs.execute('pragma table_info('+tab_n+')')
                 for i in col_cur:
                     self.col.append(i[1])
-            else:    
-                st = self.query.find('from')
-                self.col = self.query[6:st].split(',')
-            
-    def save_DB(self):
-        pass
-            
+                return
+            for colon in parse_list:
+                if not within_parse(colon):
+                    self.col.append(colon)
+        
+        
+        
+        
+        
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
