@@ -171,10 +171,12 @@ class MyWorkWindow(QtWidgets.QWidget):
             return
         try:
             response = self.curs.execute(self.query).fetchall()
-            response = [str(i) for i in response]         
+            #response = [str(i) for i in response]
+            response = [' | '.join([str(k) for k in i]) for i in response]
         except:
             response = sys.exc_info()[:2]
             response = [str(i) for i in response]
+            
             self.error = 'ERROR'
         if not self.error: self.parse_query()
         self.make_bottomframe(response)
@@ -201,12 +203,22 @@ class MyWorkWindow(QtWidgets.QWidget):
                 if res_check:
                     self.col.append('time_col')
             return answ
+        
+        def parse_subquery(q_str):
+                st = q_str.find('from')
+                if q_str[:st].count('select'):
+                        return (st + 4) + parse_subquery(q_str[st+4:])
+                else:
+                        return st + 4
             
         low = self.query.lower()
         if low.startswith('select'):
-            st = self.query.find('from')
-            parse_part = self.query[6:st].strip()
-            parse_list = parse_part.split(',')
+            st = low.find('from')
+            parse_part = self.query[6:st]
+            if parse_part.lower().count('select'):
+                stn = parse_subquery(low[st+4:].strip())
+                parse_part = self.query[6:stn+st].strip()
+            parse_list = parse_part.strip().split(',')
             if '*' == parse_list[0].strip():
                 tab_n = self.query[st:].split()[1]
                 col_cur = self.curs.execute('pragma table_info('+tab_n+')')
