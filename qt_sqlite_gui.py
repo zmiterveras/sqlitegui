@@ -121,21 +121,22 @@ class MyWorkWindow(QtWidgets.QWidget):
         btn.clicked.connect(self.execute_query)
         self.vtop.addWidget(btn)
         
-    def make_bottomframe(self, response):
+    def make_bottomframe(self):
         self.clear_vbottom()
         if not self.query:
             self.query = self.query_sh_t
         text = 'Ответ:' if not self.error else self.error
         self.vbottom.addWidget(QtWidgets.QLabel('Запрос: '+ self.query))
         self.vbottom.addWidget(QtWidgets.QLabel(text))
-        if not response:
-            response = ['Ничего не найдено или синтксис запроса не поддерживается']
+        if not self.response:
+            self.response = ['Ничего не найдено или синтксис запроса не поддерживается']
         else:
             if self.col:
                 col_name = ' | '.join(self.col)
-                response.insert(0, col_name)
+                self.response.insert(0, col_name)
+                self.response.insert(1, '*' * len(col_name))
         self.lv = QtWidgets.QListView()
-        slm = QtCore.QStringListModel(response)
+        slm = QtCore.QStringListModel(self.response)
         self.lv.setModel(slm)
         self.vbottom.addWidget(self.lv)
         self.query = ''
@@ -170,16 +171,16 @@ class MyWorkWindow(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(None, 'Предупреждение', 'Не введен запрос')
             return
         try:
-            response = self.curs.execute(self.query).fetchall()
+            self.response = self.curs.execute(self.query).fetchall()
             #response = [str(i) for i in response]
-            response = [' | '.join([str(k) for k in i]) for i in response]
+            self.response = [' | '.join([str(k) for k in i]) for i in self.response]
         except:
-            response = sys.exc_info()[:2]
-            response = [str(i) for i in response]
+            self.response = sys.exc_info()[:2]
+            self.response = [str(i) for i in self.response]
             
             self.error = 'ERROR'
         if not self.error: self.parse_query()
-        self.make_bottomframe(response)
+        self.make_bottomframe()
         self.ent.setText('')
     
     def save_DB(self):
@@ -228,6 +229,47 @@ class MyWorkWindow(QtWidgets.QWidget):
             for colon in parse_list:
                 if not within_parse(colon):
                     self.col.append(colon)
+        elif low.startswith('insert'):
+            st = low.find('into')
+            tab = self.query[st+4:].strip().split()[0]
+            self.response.append('В таблицу %s добавлены значения' % tab)
+        elif low.startswith('update'):
+            st = low.find('set')
+            en = low.find('where')
+            tab = self.query[7:st].strip()
+            self.response.append('В таблицу %s внесены изменения' % tab)
+            cells = self.query[st+3:en].split(',')
+            cell_list = []
+            for i in cells:
+                eq = i.find('=')
+                i = i[:eq]
+                cell_list.append(i)
+            cells = ','.join(cell_list)
+            self.response.append('Изменения внесены в ячейки: %s' % cells)
+            if 'where' in low:
+                target = self.query[en+5:]
+                self.response.append('Где %s' % target)
+        elif low.startswith('delete'):
+            en = low.find('where')
+            tab = self.query[:en].strip().split()[-1]
+            self.response.append('Из таблицы %s удалены строки' % tab)
+            if 'where' in low:
+                target = self.query[en+5:]
+                self.response.append('Где %s' % target)
+            else:
+                self.response.append('Все данные')
+        elif low.startswith('create'):
+            parse_part = self.query[6:]
+            comp_item = parse_part.lower().strip().split()[0]
+            target = parse_part.strip().split()[1]
+            if comp_item == 'view':
+                self.response.append('Создано представление: %s' % target)
+            elif comp_item == 'table':
+                self.response.append('Создана таблица: %s' % target)
+                
+                
+                
+                
         
         
         
