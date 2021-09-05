@@ -160,8 +160,8 @@ class MyWorkWindow(QtWidgets.QWidget):
         if self.base_name:
             self.query_sh_t = 'select name from sqlite_master where type="table"'
             tables = self.curs.execute(self.query_sh_t).fetchall()
-            tables = [str(i) for i in tables] 
-            self.make_bottomframe(tables)
+            self.response = [i[0] for i in tables] 
+            self.make_bottomframe()
         else:
             QtWidgets.QMessageBox.warning(None, 'Предупреждение', 'Отсутствует БД')
             
