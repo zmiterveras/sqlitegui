@@ -100,20 +100,43 @@ class MyWorkWindow(QtWidgets.QWidget):
         
     def makeWidget(self):
         self.box = QtWidgets.QVBoxLayout()
+        self.hbox = QtWidgets.QHBoxLayout()
+        self.infobox =  QtWidgets.QHBoxLayout()
+        self.box.addLayout(self.hbox)
+        self.box.addLayout(self.infobox)
+        self.leftframe = QtWidgets.QFrame()
+        self.leftframe.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Raised)
+        self.rightframe = QtWidgets.QFrame()
+        self.rightframe.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Raised)
+        self.querybox = QtWidgets.QVBoxLayout()
+        self.basebox = QtWidgets.QVBoxLayout()
         self.vtop = QtWidgets.QVBoxLayout()
         self.vbottom = QtWidgets.QVBoxLayout()
-        self.infobox =  QtWidgets.QHBoxLayout()
-        self.box.addLayout(self.vtop)
-        self.box.addLayout(self.vbottom)
+        #####
+        self.hbox.addWidget(self.leftframe)
+        self.hbox.addWidget(self.rightframe)
+        self.leftframe.setLayout(self.basebox)
+        self.rightframe.setLayout(self.querybox)
+        ####
+        self.querybox.addLayout(self.vtop)
+        self.querybox.addLayout(self.vbottom)
         self.btncl = QtWidgets.QPushButton('Выход')
         self.infobox.addWidget(self.btncl)
-        self.box.addLayout(self.infobox)
         self.setLayout(self.box)
+        self.make_baseframe()
         self.make_topframe()
+        
+    def make_baseframe(self):
+        self.basebox.addWidget(QtWidgets.QLabel('Имя БД:\n' + self.base_name))
+        self.showTable()
+        lv = QtWidgets.QListView()
+        slm = QtCore.QStringListModel(self.response)
+        lv.setModel(slm)
+        self.basebox.addWidget(lv)
+        
         
     def make_topframe(self):
         self.clear_vtop()
-        self.vtop.addWidget(QtWidgets.QLabel('Имя БД: '+self.base_name))
         self.vtop.addWidget(QtWidgets.QLabel('Введите SQL запрос: '))
         self.ent = QtWidgets.QLineEdit()
         self.vtop.addWidget(self.ent)
@@ -160,8 +183,8 @@ class MyWorkWindow(QtWidgets.QWidget):
         if self.base_name:
             self.query_sh_t = 'select name from sqlite_master where type="table"'
             tables = self.curs.execute(self.query_sh_t).fetchall()
-            self.response = [i[0] for i in tables] 
-            self.make_bottomframe()
+            self.response = [i[0] for i in tables]
+            #self.make_bottomframe()
         else:
             QtWidgets.QMessageBox.warning(None, 'Предупреждение', 'Отсутствует БД')
             
@@ -279,7 +302,7 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.setWindowTitle('SQLITE3 GUI')
-    # window.resize(350,200)
+    window.resize(350,200)
     # desktop = QtWidgets.QApplication.desktop()
     # x = (desktop.width() // 2) - window.width() 
     # window.move(x, 250)
