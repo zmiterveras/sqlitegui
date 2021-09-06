@@ -96,6 +96,7 @@ class MyWorkWindow(QtWidgets.QWidget):
         self.error = ''
         self.col = []
         self.query_sh_t = ''
+        self.w = self.size().width()
         self.makeWidget()
         
     def makeWidget(self):
@@ -105,6 +106,7 @@ class MyWorkWindow(QtWidgets.QWidget):
         self.box.addLayout(self.hbox)
         self.box.addLayout(self.infobox)
         self.leftframe = QtWidgets.QFrame()
+        self.leftframe.setFixedWidth(0.25*self.w)
         self.leftframe.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Raised)
         self.rightframe = QtWidgets.QFrame()
         self.rightframe.setFrameStyle(QtWidgets.QFrame.Box | QtWidgets.QFrame.Raised)
@@ -133,6 +135,10 @@ class MyWorkWindow(QtWidgets.QWidget):
         slm = QtCore.QStringListModel(self.response)
         lv.setModel(slm)
         self.basebox.addWidget(lv)
+        
+    def resizeEvent(self, e):
+        self.leftframe.setFixedWidth(0.25*e.size().width())
+        QtWidgets.QWidget.resizeEvent(self, e)
         
         
     def make_topframe(self):
