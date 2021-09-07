@@ -344,10 +344,10 @@ if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
     window.setWindowTitle('SQLITE3 GUI')
-    window.resize(350,200)
-    # desktop = QtWidgets.QApplication.desktop()
+    desktop = QtWidgets.QApplication.desktop()
     # x = (desktop.width() // 2) - window.width() 
     # window.move(x, 250)
+    window.resize(desktop.width()*0.3, desktop.height()*0.25)
     window.show()
     sys.exit(app.exec_())
         
