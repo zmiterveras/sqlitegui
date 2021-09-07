@@ -20,7 +20,6 @@ class MainWindow(QtWidgets.QMainWindow):
         action = myMenu.addAction('&Открыть', lambda: self.open_DB(myMenu))
         #action = myMenu.addAction('Test',  self.test)
         myDB = menuBar.addMenu('БД')
-        action = myDB.addAction('Show table',  self.showT)
         action = myDB.addAction('Commit', self.commit_DB)
         action = myDB.addAction('Close DB',  self.close_DB)
         myAbout = menuBar.addMenu('О...')
@@ -55,13 +54,6 @@ class MainWindow(QtWidgets.QMainWindow):
         else:
             QtWidgets.QMessageBox.warning(None, 'Предупреждение', 'БД уже открыта')
             return
-        
-    def showT(self):
-        if not self.win:
-            QtWidgets.QMessageBox.warning(None, 'Предупреждение', 'Отсутствует БД')
-            return
-        else:
-            self.win.showTable()
         
     def commit_DB(self):
         self.bd.commit()
@@ -129,12 +121,36 @@ class MyWorkWindow(QtWidgets.QWidget):
         self.make_topframe()
         
     def make_baseframe(self):
-        self.basebox.addWidget(QtWidgets.QLabel('Имя БД:\n' + self.base_name))
+        def rootit_new(dic, rootitem, lr):
+            if type(dic) == dict:
+                sequence = dic.keys()
+            else:
+                sequence = dic
+            for name in sequence:
+                item1 = QtGui.QStandardItem(name)
+                lr.append(item1)
+                rootitem.appendRow([item1])
+                
         self.showTable()
-        lv = QtWidgets.QListView()
-        slm = QtCore.QStringListModel(self.response)
-        lv.setModel(slm)
-        self.basebox.addWidget(lv)
+        tv = QtWidgets.QTreeView()
+        sti = QtGui.QStandardItemModel()
+        rootitem1 = QtGui.QStandardItem('Таблицы: ')
+        rootitem2 = []
+        rootitem3=[]
+        rootit_new(self.table_info, rootitem1, rootitem2)
+        tables_rootitem = [] 
+        key_list = list(self.table_info.keys())
+        for i in range(self.len_tabels):
+            rootit_new(self.table_info[key_list[i]], rootitem2[i], tables_rootitem)
+        p = 0
+        for nt in self.table_info.keys():
+            for tn in self.table_info[nt].keys():
+                rootit_new(self.table_info[nt][tn], tables_rootitem[p], rootitem3)
+                p += 1
+        sti.appendRow([rootitem1])
+        sti.setHorizontalHeaderLabels(['Имя БД: ' + self.base_name])
+        tv.setModel(sti)
+        self.basebox.addWidget(tv)
         
     def resizeEvent(self, e):
         self.leftframe.setFixedWidth(0.25*e.size().width())
@@ -143,9 +159,9 @@ class MyWorkWindow(QtWidgets.QWidget):
         
     def make_topframe(self):
         self.clear_vtop()
-        self.vtop.addWidget(QtWidgets.QLabel('Введите SQL запрос: '))
+        self.vtop.addWidget(QtWidgets.QLabel('Введите SQL запрос: '), alignment=QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         self.ent = QtWidgets.QLineEdit()
-        self.vtop.addWidget(self.ent)
+        self.vtop.addWidget(self.ent) #, alignment=QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         btn = QtWidgets.QPushButton('Выполнить')
         btn.clicked.connect(self.execute_query)
         self.vtop.addWidget(btn)
@@ -187,10 +203,30 @@ class MyWorkWindow(QtWidgets.QWidget):
             
     def showTable(self):
         if self.base_name:
+            self.table_info = {}
             self.query_sh_t = 'select name from sqlite_master where type="table"'
             tables = self.curs.execute(self.query_sh_t).fetchall()
             self.response = [i[0] for i in tables]
             #self.make_bottomframe()
+            for j in self.response:
+                self.table_info[j] = {}
+                query_table_info = self.curs.execute('pragma table_info('+ j +')').fetchall()
+                for col in query_table_info:
+                    col_name = col[1]
+                    col_type = 'Type: ' + col[2]
+                    if col[3] == 1:
+                        col_null = 'NULL: Yes'
+                    else:
+                        col_null = 'NULL: No'
+                    col_default = 'default: ' + str(col[4])
+                    if col[5] == 0:
+                        col_pk = 'PK: No'
+                    else:
+                        col_pk = 'PK: Yes'
+                    self.table_info[j][col_name] = [col_type, col_null, col_default, col_pk]      
+            self.len_tabels = len(self.table_info)
+            self.len_cols = sum([len(self.table_info[key]) for key in self.table_info])
+            len_list = self.len_tabels + self.len_cols
         else:
             QtWidgets.QMessageBox.warning(None, 'Предупреждение', 'Отсутствует БД')
             
