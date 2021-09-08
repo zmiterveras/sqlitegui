@@ -87,7 +87,7 @@ class MyWorkWindow(QtWidgets.QWidget):
         self.query = ''
         self.error = ''
         self.col = []
-        self.query_sh_t = ''
+        self.rl_flag = 1
         self.w = self.size().width()
         self.makeWidget()
         
@@ -117,10 +117,10 @@ class MyWorkWindow(QtWidgets.QWidget):
         self.btncl = QtWidgets.QPushButton('Выход')
         self.infobox.addWidget(self.btncl)
         self.setLayout(self.box)
-        self.make_baseframe()
-        self.make_topframe()
+        self.make_basebox()
+        self.make_topbox()
         
-    def make_baseframe(self):
+    def make_basebox(self):
         def rootit_new(dic, rootitem, lr):
             if type(dic) == dict:
                 sequence = dic.keys()
@@ -157,29 +157,22 @@ class MyWorkWindow(QtWidgets.QWidget):
         QtWidgets.QWidget.resizeEvent(self, e)
         
         
-    def make_topframe(self):
+    def make_topbox(self):
         self.clear_vtop()
         self.vtop.addWidget(QtWidgets.QLabel('Введите SQL запрос: '), alignment=QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         self.ent = QtWidgets.QLineEdit()
-        self.vtop.addWidget(self.ent) #, alignment=QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        self.vtop.addWidget(self.ent, alignment=QtCore.Qt.AlignTop)
         btn = QtWidgets.QPushButton('Выполнить')
         btn.clicked.connect(self.execute_query)
         self.vtop.addWidget(btn)
         
-    def make_bottomframe(self):
+    def make_bottombox_list(self):
         self.clear_vbottom()
-        if not self.query:
-            self.query = self.query_sh_t
         text = 'Ответ:' if not self.error else self.error
         self.vbottom.addWidget(QtWidgets.QLabel('Запрос: '+ self.query))
         self.vbottom.addWidget(QtWidgets.QLabel(text))
         if not self.response:
             self.response = ['Ничего не найдено или синтксис запроса не поддерживается']
-        else:
-            if self.col:
-                col_name = ' | '.join(self.col)
-                self.response.insert(0, col_name)
-                self.response.insert(1, '*' * len(col_name))
         self.lv = QtWidgets.QListView()
         slm = QtCore.QStringListModel(self.response)
         self.lv.setModel(slm)
@@ -187,6 +180,34 @@ class MyWorkWindow(QtWidgets.QWidget):
         self.query = ''
         self.error = ''
         self.col = []
+        
+    def make_bottombox(self):
+        if not self.response or self.error or self.rl_flag:
+            self.make_bottombox_list()
+            return
+        # if not self.response:
+        #     self.make_bottombox_list()
+        #     return
+        # if self.error:
+        #     self.make_bottombox_list()
+        #     return
+        self.clear_vbottom()
+        self.vbottom.addWidget(QtWidgets.QLabel('Запрос: '+ self.query))
+        self.vbottom.addWidget(QtWidgets.QLabel('Ответ:'))
+        self.tb = QtWidgets.QTableView()
+        sti = QtGui.QStandardItemModel()
+        for row in self.response:
+            row_list = []
+            for it in row:
+                row_list.append(QtGui.QStandardItem(str(it)))
+            sti.appendRow(row_list)
+        sti.setHorizontalHeaderLabels(self.col)
+        self.tb.setModel(sti)
+        self.vbottom.addWidget(self.tb)
+        self.query = ''
+        self.error = ''
+        self.col = []
+        self.rl_flag = 1
         
         
     def clear_vtop(self):
@@ -207,7 +228,6 @@ class MyWorkWindow(QtWidgets.QWidget):
             self.query_sh_t = 'select name from sqlite_master where type="table"'
             tables = self.curs.execute(self.query_sh_t).fetchall()
             self.response = [i[0] for i in tables]
-            #self.make_bottomframe()
             for j in self.response:
                 self.table_info[j] = {}
                 query_table_info = self.curs.execute('pragma table_info('+ j +')').fetchall()
@@ -237,15 +257,12 @@ class MyWorkWindow(QtWidgets.QWidget):
             return
         try:
             self.response = self.curs.execute(self.query).fetchall()
-            #response = [str(i) for i in response]
-            self.response = [' | '.join([str(k) for k in i]) for i in self.response]
         except:
             self.response = sys.exc_info()[:2]
             self.response = [str(i) for i in self.response]
-            
             self.error = 'ERROR'
         if not self.error: self.parse_query()
-        self.make_bottomframe()
+        self.make_bottombox()
         self.ent.setText('')
     
     def save_DB(self):
@@ -279,6 +296,7 @@ class MyWorkWindow(QtWidgets.QWidget):
             
         low = self.query.lower()
         if low.startswith('select'):
+            self.rl_flag = 0
             st = low.find('from')
             parse_part = self.query[6:st]
             if parse_part.lower().count('select'):
