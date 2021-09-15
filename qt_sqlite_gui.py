@@ -185,12 +185,6 @@ class MyWorkWindow(QtWidgets.QWidget):
         if not self.response or self.error or self.rl_flag:
             self.make_bottombox_list()
             return
-        # if not self.response:
-        #     self.make_bottombox_list()
-        #     return
-        # if self.error:
-        #     self.make_bottombox_list()
-        #     return
         self.clear_vbottom()
         self.vbottom.addWidget(QtWidgets.QLabel('Запрос: '+ self.query))
         self.vbottom.addWidget(QtWidgets.QLabel('Ответ:'))
@@ -222,33 +216,37 @@ class MyWorkWindow(QtWidgets.QWidget):
             wb.setParent(None)
             wb.deleteLater()
             
+    def clear_basebox(self):
+        for i in reversed(range(self.basebox.count())):
+            wt = self.basebox.itemAt(i).widget()
+            wt.setParent(None)
+            wt.deleteLater()        
+    
+            
     def showTable(self):
-        if self.base_name:
-            self.table_info = {}
-            self.query_sh_t = 'select name from sqlite_master where type="table"'
-            tables = self.curs.execute(self.query_sh_t).fetchall()
-            self.response = [i[0] for i in tables]
-            for j in self.response:
-                self.table_info[j] = {}
-                query_table_info = self.curs.execute('pragma table_info('+ j +')').fetchall()
-                for col in query_table_info:
-                    col_name = col[1]
-                    col_type = 'Type: ' + col[2]
-                    if col[3] == 1:
-                        col_null = 'NULL: Yes'
-                    else:
-                        col_null = 'NULL: No'
-                    col_default = 'default: ' + str(col[4])
-                    if col[5] == 0:
-                        col_pk = 'PK: No'
-                    else:
-                        col_pk = 'PK: Yes'
-                    self.table_info[j][col_name] = [col_type, col_null, col_default, col_pk]      
-            self.len_tabels = len(self.table_info)
-            self.len_cols = sum([len(self.table_info[key]) for key in self.table_info])
-            len_list = self.len_tabels + self.len_cols
-        else:
-            QtWidgets.QMessageBox.warning(None, 'Предупреждение', 'Отсутствует БД')
+        self.table_info = {}
+        self.query_sh_t = 'select name from sqlite_master where type="table"'
+        tables = self.curs.execute(self.query_sh_t).fetchall()
+        self.response_ = [i[0] for i in tables]
+        for j in self.response_:
+            self.table_info[j] = {}
+            query_table_info = self.curs.execute('pragma table_info('+ j +')').fetchall()
+            for col in query_table_info:
+                col_name = col[1]
+                col_type = 'Type: ' + col[2]
+                if col[3] == 1:
+                    col_null = 'NULL: Yes'
+                else:
+                    col_null = 'NULL: No'
+                col_default = 'default: ' + str(col[4])
+                if col[5] == 0:
+                    col_pk = 'PK: No'
+                else:
+                    col_pk = 'PK: Yes'
+                self.table_info[j][col_name] = [col_type, col_null, col_default, col_pk]      
+        self.len_tabels = len(self.table_info)
+        self.len_cols = sum([len(self.table_info[key]) for key in self.table_info])
+        
             
     def execute_query(self):
         self.query = self.ent.text()
@@ -348,15 +346,39 @@ class MyWorkWindow(QtWidgets.QWidget):
             if comp_item == 'view':
                 self.response.append('Создано представление: %s' % target)
             elif comp_item == 'table':
+                self.clear_basebox()
+                self.make_basebox()
                 self.response.append('Создана таблица: %s' % target)
-                
-                
-                
-                
-        
-        
-        
-        
+            elif comp_item == 'index':
+                tt = parse_part.strip().split()[3]
+                tc = parse_part.strip().split()[4]
+                self.response.append('Создан индекс: %s,\n для таблицы: %s,\n для столбца(-ов): %s' % (target, tt, tc))
+        elif low.startswith('alter table'):
+            parse_list = self.query[11:].strip().split()
+            target = parse_list[0]
+            if '_'.join(parse_list[1:3]).startswith('rename to'):
+                self.response.append('Таблица %s переименована в %s' % (target, parse_list[-1]))
+            elif '_'.join(parse_list[1:3]).startswith('rename column'):
+                self.response.append('Столбец %s таблицы %s переименован в %s' % (parse_list[3], target, parse_list[-1]))
+            elif '_'.join(parse_list[1:3]).startswith('add column'):
+                self.response.append('В таблицу %s добавлен столбец %s' % (target, parse_list[-1]))
+            elif '_'.join(parse_list[1:3]).startswith('drop column'):
+                self.response.append('Из таблицу %s удален столбец %s' % (target, parse_list[-1]))
+            self.clear_basebox()
+            self.make_basebox()
+        elif low.startswith('drop'):
+            parse_part = self.query[4:]
+            comp_item = parse_part.lower().strip().split()[0]
+            target = parse_part.strip().split()[1]
+            if comp_item == 'view':
+                self.response.append('Удалено представление: %s' % target)
+            elif comp_item == 'table':
+                self.clear_basebox()
+                self.make_basebox()
+                self.response.append('Удалена таблица: %s' % target)
+            elif comp_item == 'index':
+                self.response.append('Удален индекс: %s' % target)
+            
         
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
