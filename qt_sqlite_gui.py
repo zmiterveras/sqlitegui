@@ -9,17 +9,14 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QMainWindow.__init__(self, parent)
         self.win = None
         self.wp = os.path.dirname(os.path.abspath(__file__))
-        text_ch = """<center>Откройте или создайте базу данных</center>\n
-        <center>Используйте меню:</center>\n
-        <center><b>"Файл"</b></center>"""
-        self.greeting = QtWidgets.QLabel(text_ch)
-        self.setCentralWidget(self.greeting)     
+        self.greeting() 
         menuBar = self.menuBar()
         myMenu = menuBar.addMenu('&Файл')
-        action = myMenu.addAction('&Создать',  self.create_DB)
-        action = myMenu.addAction('&Открыть', lambda: self.open_DB(myMenu))
+        action = myMenu.addAction('&Закрыть',  self.close)
         #action = myMenu.addAction('Test',  self.test)
         myDB = menuBar.addMenu('БД')
+        action = myDB.addAction('&Создать БД',  self.create_DB)
+        action = myDB.addAction('&Открыть БД', self.open_DB)
         action = myDB.addAction('Commit', self.commit_DB)
         action = myDB.addAction('Close DB',  self.close_DB)
         myAbout = menuBar.addMenu('О...')
@@ -39,7 +36,16 @@ class MainWindow(QtWidgets.QMainWindow):
         last_name = os.path.basename(name_DB)
         QtWidgets.QMessageBox.information(None,'Инфо', 'Создана БД: ' + last_name)
         
-    def open_DB(self, myMenu):
+    def greeting(self):
+        text_ch = """<center>Откройте или создайте базу данных</center>\n
+        <center>Используйте меню:</center>\n
+        <center><b>"БД"</b></center>"""
+        self.gr_lab = QtWidgets.QLabel(text_ch)
+        self.setCentralWidget(self.gr_lab) 
+        
+        
+        
+    def open_DB(self):
         if not self.b_n:
             self.b_n, fil_ = QtWidgets.QFileDialog.getOpenFileName(None, caption='Открыть БД',
                                                                          directory=self.wp, filter='DB (*.sqlite)') 
@@ -47,8 +53,6 @@ class MainWindow(QtWidgets.QMainWindow):
             self.base_name = os.path.basename(self.b_n)
             self.curs = self.bd.cursor()
             self.win = MyWorkWindow(self.curs, self.base_name)
-            action = myMenu.addAction('Сохранить',  self.win.save_DB)
-            action = myMenu.addAction('&Закрыть',  self.close)
             self.win.btncl.clicked.connect(self.close)
             self.setCentralWidget(self.win)
         else:
@@ -65,7 +69,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     defaultButton=QtWidgets.QMessageBox.No)
         if result == 16384:
             self.bd.close()
-            self.setCentralWidget(self.greeting)
+            self.b_n = ''
+            self.greeting()
         
     def aboutProgramm(self):
         pass
@@ -180,9 +185,11 @@ class MyWorkWindow(QtWidgets.QWidget):
         self.query = ''
         self.error = ''
         self.col = []
+        self.rl_flag = 1
         
     def make_bottombox(self):
-        if not self.response or self.error or self.rl_flag:
+        print('flag: ', self.rl_flag)
+        if not self.response or self.rl_flag:
             self.make_bottombox_list()
             return
         self.clear_vbottom()
@@ -263,9 +270,6 @@ class MyWorkWindow(QtWidgets.QWidget):
         self.make_bottombox()
         self.ent.setText('')
     
-    def save_DB(self):
-        pass
-            
     def parse_query(self):
         def within_parse(colon):
             check_list = ['*', '/', '-', '+', '|']
@@ -356,13 +360,13 @@ class MyWorkWindow(QtWidgets.QWidget):
         elif low.startswith('alter table'):
             parse_list = self.query[11:].strip().split()
             target = parse_list[0]
-            if '_'.join(parse_list[1:3]).startswith('rename to'):
+            if ' '.join(parse_list[1:3]).startswith('rename to'):
                 self.response.append('Таблица %s переименована в %s' % (target, parse_list[-1]))
-            elif '_'.join(parse_list[1:3]).startswith('rename column'):
+            elif ' '.join(parse_list[1:3]).startswith('rename column'):
                 self.response.append('Столбец %s таблицы %s переименован в %s' % (parse_list[3], target, parse_list[-1]))
-            elif '_'.join(parse_list[1:3]).startswith('add column'):
-                self.response.append('В таблицу %s добавлен столбец %s' % (target, parse_list[-1]))
-            elif '_'.join(parse_list[1:3]).startswith('drop column'):
+            elif ' '.join(parse_list[1:3]).startswith('add column'):
+                self.response.append('В таблицу %s добавлен столбец %s' % (target, parse_list[-2]))
+            elif ' '.join(parse_list[1:3]).startswith('drop column'):
                 self.response.append('Из таблицу %s удален столбец %s' % (target, parse_list[-1]))
             self.clear_basebox()
             self.make_basebox()
@@ -378,6 +382,7 @@ class MyWorkWindow(QtWidgets.QWidget):
                 self.response.append('Удалена таблица: %s' % target)
             elif comp_item == 'index':
                 self.response.append('Удален индекс: %s' % target)
+    
             
         
 if __name__ == '__main__':
