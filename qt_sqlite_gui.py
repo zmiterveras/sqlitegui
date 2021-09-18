@@ -39,13 +39,13 @@ lang = {'ru':[('&Файл', 0), ('Закрыть', 1), ('БД', 2), ('Созда
               ('Deleted view: %s', 42), ('Language', 43), ('Russian', 44), ('English', 45)]
         }
 
-settings = QtCore.QSettings('zmv', 'qt_sqlite')
-if settings.contains('Language'):
-    menu_l = settings.value('Language')
-else:
-    menu_l = 'en'
-    settings.setValue('Language', menu_l)
-app_l = lang[menu_l]
+# settings = QtCore.QSettings('zmv', 'qt_sqlite')
+# if settings.contains('Language'):
+#     menu_l = settings.value('Language')
+# else:
+#     menu_l = 'en'
+#     settings.setValue('Language', menu_l)
+app_l = lang['ru'][menu_l]
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
