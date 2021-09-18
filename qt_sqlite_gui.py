@@ -39,62 +39,76 @@ lang = {'ru':[('&Файл', 0), ('Закрыть', 1), ('БД', 2), ('Созда
               ('Deleted view: %s', 42), ('Language', 43), ('Russian', 44), ('English', 45)]
         }
 
-# settings = QtCore.QSettings('zmv', 'qt_sqlite')
-# if settings.contains('Language'):
-#     menu_l = settings.value('Language')
-# else:
-#     menu_l = 'en'
-#     settings.setValue('Language', menu_l)
-app_l = lang['ru'][menu_l]
+settings = QtCore.QSettings('zmv', 'qt_sqlite')
+if settings.contains('Language'):
+   menu_l = settings.value('Language')
+else:
+   menu_l = 'en'
+   settings.setValue('Language', menu_l)
+#app_l = lang[menu_l]
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
         QtWidgets.QMainWindow.__init__(self, parent)
         self.win = None
         self.wp = os.path.dirname(os.path.abspath(__file__))
-        self.greeting()
+        self.start = 0
         self.setLanguage(menu_l)
+        self.greeting()
+        self.menuBar = self.menuBar()
         self.makeMenu()
         self.b_n = ''
         
+        
     def makeMenu(self):
-        menuBar = self.menuBar()
-        myMenu = menuBar.addMenu(self.app_l[0][0])
-        action = myMenu.addAction('&'+app_l[1][0],  self.close)
+        myMenu = self.menuBar.addMenu(self.app_l[0][0])
+        action = myMenu.addAction('&'+self.app_l[1][0],  self.close)
         #action = myMenu.addAction('Test',  self.test)
-        myDB = menuBar.addMenu(self.app_l[2][0])
-        action = myDB.addAction('&'+app_l[3][0],  self.create_DB)
-        action = myDB.addAction('&'+app_l[4][0], self.open_DB)
-        action = myDB.addAction(app_l[5][0], self.commit_DB)
-        action = myDB.addAction(app_l[6][0],  self.close_DB)
-        menuLang = menuBar.addMenu(self.app_l[43][0])
-        action = menuLang.addAction(app_l[44][0], lambda ln='ru': self.setLanguage(ln))
-        action = menuLang.addAction(app_l[45][0], lambda ln='en': self.setLanguage(ln))
-        myAbout = menuBar.addMenu(self.app_l[7][0])
-        action = myAbout.addAction(app_l[8][0], self.aboutProgramm)
-        action = myAbout.addAction(app_l[9][0], self.aboutMe)
+        myDB = self.menuBar.addMenu(self.app_l[2][0])
+        action = myDB.addAction('&'+self.app_l[3][0],  self.create_DB)
+        action = myDB.addAction('&'+self.app_l[4][0], self.open_DB)
+        action = myDB.addAction(self.app_l[5][0], self.commit_DB)
+        action = myDB.addAction(self.app_l[6][0],  self.close_DB)
+        menuLang = self.menuBar.addMenu(self.app_l[43][0])
+        action = menuLang.addAction(self.app_l[44][0], lambda ln='ru': self.setLanguage(ln))
+        action = menuLang.addAction(self.app_l[45][0], lambda ln='en': self.setLanguage(ln))
+        myAbout = self.menuBar.addMenu(self.app_l[7][0])
+        action = myAbout.addAction(self.app_l[8][0], self.aboutProgramm)
+        action = myAbout.addAction(self.app_l[9][0], self.aboutMe)
         
     def setLanguage(self, ln):
         settings.setValue('Language', ln)
-        app_l = lang[ln]
-        self.app_l = app_l
-        print(app_l[0][0])
-        #window.update()
+        self.app_l = lang[ln]
+        if self.start > 0:
+            self.main_update()
+        self.start += 1
+        
+    def main_update(self):
+        self.menuBar.clear()
+        self.makeMenu()
+        if self.b_n:
+            self.win = MyWorkWindow(self.curs, self.base_name, self.app_l)
+            self.win.btncl.clicked.connect(self.close)
+            self.setCentralWidget(self.win)
+        else:
+            self.gr_lab.setText(self.app_l[16][0])
+            
+    
             
     def create_DB(self):
-        s, ok = QtWidgets.QInputDialog.getText(None, app_l[10][0], app_l[11][0])
+        s, ok = QtWidgets.QInputDialog.getText(None, self.app_l[10][0], self.app_l[11][0])
         if not ok: return
         if ok and not s:
-            QtWidgets.QMessageBox.warning(None, app_l[12][0], app_l[13][0])
+            QtWidgets.QMessageBox.warning(None, self.app_l[12][0], self.app_l[13][0])
             return
         name_DB = s + '.sqlite'
         conn = sqlite3.connect(name_DB)
         conn.close()
         last_name = os.path.basename(name_DB)
-        QtWidgets.QMessageBox.information(None,app_l[14][0], app_l[15][0] + last_name)
+        QtWidgets.QMessageBox.information(None,self.app_l[14][0], self.app_l[15][0] + last_name)
         
     def greeting(self):
-        text_ch = app_l[16][0]
+        text_ch = self.app_l[16][0]
         self.gr_lab = QtWidgets.QLabel(text_ch)
         self.setCentralWidget(self.gr_lab) 
         
@@ -102,24 +116,24 @@ class MainWindow(QtWidgets.QMainWindow):
         
     def open_DB(self):
         if not self.b_n:
-            self.b_n, fil_ = QtWidgets.QFileDialog.getOpenFileName(None, caption=app_l[4][0],
+            self.b_n, fil_ = QtWidgets.QFileDialog.getOpenFileName(None, caption=self.app_l[4][0],
                                                                          directory=self.wp, filter='DB (*.sqlite)') 
             self.bd = sqlite3.connect(self.b_n)
             self.base_name = os.path.basename(self.b_n)
             self.curs = self.bd.cursor()
-            self.win = MyWorkWindow(self.curs, self.base_name)
+            self.win = MyWorkWindow(self.curs, self.base_name, self.app_l)
             self.win.btncl.clicked.connect(self.close)
             self.setCentralWidget(self.win)
         else:
-            QtWidgets.QMessageBox.warning(None, app_l[12][0], app_l[17][0])
+            QtWidgets.QMessageBox.warning(None, self.app_l[12][0], self.app_l[17][0])
             return
         
     def commit_DB(self):
         self.bd.commit()
         
     def close_DB(self):
-        result = QtWidgets.QMessageBox.question(None, app_l[12][0],
-                    app_l[18][0],
+        result = QtWidgets.QMessageBox.question(None, self.app_l[12][0],
+                    self.app_l[18][0],
                     buttons=QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                     defaultButton=QtWidgets.QMessageBox.No)
         if result == 16384:
@@ -138,10 +152,11 @@ class MainWindow(QtWidgets.QMainWindow):
         e.accept()
         QtWidgets.QWidget.closeEvent(self, e)
         
-
+#########################################################################################################
 class MyWorkWindow(QtWidgets.QWidget):
-    def __init__(self,curs, base_name, parent=None):
+    def __init__(self,curs, base_name, app_l, parent=None):
         QtWidgets.QWidget.__init__(self, parent)
+        self.app_l = app_l
         self.curs = curs
         self.base_name = base_name
         self.query = ''
@@ -174,7 +189,7 @@ class MyWorkWindow(QtWidgets.QWidget):
         ####
         self.querybox.addLayout(self.vtop)
         self.querybox.addLayout(self.vbottom)
-        self.btncl = QtWidgets.QPushButton(app_l[1][0])
+        self.btncl = QtWidgets.QPushButton(self.app_l[1][0])
         self.infobox.addWidget(self.btncl)
         self.setLayout(self.box)
         self.make_basebox()
@@ -194,7 +209,7 @@ class MyWorkWindow(QtWidgets.QWidget):
         self.showTable()
         tv = QtWidgets.QTreeView()
         sti = QtGui.QStandardItemModel()
-        rootitem1 = QtGui.QStandardItem(app_l[19][0])
+        rootitem1 = QtGui.QStandardItem(self.app_l[19][0])
         rootitem2 = []
         rootitem3=[]
         rootit_new(self.table_info, rootitem1, rootitem2)
@@ -208,7 +223,7 @@ class MyWorkWindow(QtWidgets.QWidget):
                 rootit_new(self.table_info[nt][tn], tables_rootitem[p], rootitem3)
                 p += 1
         sti.appendRow([rootitem1])
-        sti.setHorizontalHeaderLabels([app_l[10][0] + ': ' + self.base_name])
+        sti.setHorizontalHeaderLabels([self.app_l[10][0] + ': ' + self.base_name])
         tv.setModel(sti)
         self.basebox.addWidget(tv)
         
@@ -219,20 +234,20 @@ class MyWorkWindow(QtWidgets.QWidget):
         
     def make_topbox(self):
         self.clear_vtop()
-        self.vtop.addWidget(QtWidgets.QLabel(app_l[20][0]), alignment=QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        self.vtop.addWidget(QtWidgets.QLabel(self.app_l[20][0]), alignment=QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         self.ent = QtWidgets.QLineEdit()
         self.vtop.addWidget(self.ent, alignment=QtCore.Qt.AlignTop)
-        btn = QtWidgets.QPushButton(app_l[21][0])
+        btn = QtWidgets.QPushButton(self.app_l[21][0])
         btn.clicked.connect(self.execute_query)
         self.vtop.addWidget(btn)
         
     def make_bottombox_list(self):
         self.clear_vbottom()
-        text = app_l[22][0] if not self.error else self.error
-        self.vbottom.addWidget(QtWidgets.QLabel(app_l[23][0] + self.query))
+        text = self.app_l[22][0] if not self.error else self.error
+        self.vbottom.addWidget(QtWidgets.QLabel(self.app_l[23][0] + self.query))
         self.vbottom.addWidget(QtWidgets.QLabel(text))
         if not self.response:
-            self.response = [app_l[24][0]]
+            self.response = [self.app_l[24][0]]
         self.lv = QtWidgets.QListView()
         slm = QtCore.QStringListModel(self.response)
         self.lv.setModel(slm)
@@ -247,8 +262,8 @@ class MyWorkWindow(QtWidgets.QWidget):
             self.make_bottombox_list()
             return
         self.clear_vbottom()
-        self.vbottom.addWidget(QtWidgets.QLabel(app_l[23][0]+ self.query))
-        self.vbottom.addWidget(QtWidgets.QLabel(app_l[22][0]))
+        self.vbottom.addWidget(QtWidgets.QLabel(self.app_l[23][0]+ self.query))
+        self.vbottom.addWidget(QtWidgets.QLabel(self.app_l[22][0]))
         self.tb = QtWidgets.QTableView()
         sti = QtGui.QStandardItemModel()
         for row in self.response:
@@ -312,14 +327,14 @@ class MyWorkWindow(QtWidgets.QWidget):
     def execute_query(self):
         self.query = self.ent.text()
         if not self.query:
-            QtWidgets.QMessageBox.warning(None, app_l[12][0], app_l[25][0])
+            QtWidgets.QMessageBox.warning(None, self.app_l[12][0], self.app_l[25][0])
             return
         try:
             self.response = self.curs.execute(self.query).fetchall()
         except:
             self.response = sys.exc_info()[:2]
             self.response = [str(i) for i in self.response]
-            self.error = app_l[26][0]
+            self.error = self.app_l[26][0]
         if not self.error: self.parse_query()
         self.make_bottombox()
         self.ent.setText('')
@@ -371,12 +386,12 @@ class MyWorkWindow(QtWidgets.QWidget):
         elif low.startswith('insert'):
             st = low.find('into')
             tab = self.query[st+4:].strip().split()[0]
-            self.response.append(app_l[27][0] % tab)
+            self.response.append(self.app_l[27][0] % tab)
         elif low.startswith('update'):
             st = low.find('set')
             en = low.find('where')
             tab = self.query[7:st].strip()
-            self.response.append(app_l[28][0] % tab)
+            self.response.append(self.app_l[28][0] % tab)
             cells = self.query[st+3:en].split(',')
             cell_list = []
             for i in cells:
@@ -384,44 +399,44 @@ class MyWorkWindow(QtWidgets.QWidget):
                 i = i[:eq]
                 cell_list.append(i)
             cells = ','.join(cell_list)
-            self.response.append(app_l[29][0] % cells)
+            self.response.append(self.app_l[29][0] % cells)
             if 'where' in low:
                 target = self.query[en+5:]
-                self.response.append(app_l[30][0] % target)
+                self.response.append(self.app_l[30][0] % target)
         elif low.startswith('delete'):
             en = low.find('where')
             tab = self.query[:en].strip().split()[-1]
-            self.response.append(app_l[32][0] % tab)
+            self.response.append(self.app_l[32][0] % tab)
             if 'where' in low:
                 target = self.query[en+5:]
-                self.response.append(app_l[30][0] % target)
+                self.response.append(self.app_l[30][0] % target)
             else:
-                self.response.append(app_l[31][0])
+                self.response.append(self.app_l[31][0])
         elif low.startswith('create'):
             parse_part = self.query[6:]
             comp_item = parse_part.lower().strip().split()[0]
             target = parse_part.strip().split()[1]
             if comp_item == 'view':
-                self.response.append(app_l[33][0] % target)
+                self.response.append(self.app_l[33][0] % target)
             elif comp_item == 'table':
                 self.clear_basebox()
                 self.make_basebox()
-                self.response.append(app_l[34][0] % target)
+                self.response.append(self.app_l[34][0] % target)
             elif comp_item == 'index':
                 tt = parse_part.strip().split()[3]
                 tc = parse_part.strip().split()[4]
-                self.response.append(app_l[36][0] % (target, tt, tc))
+                self.response.append(self.app_l[36][0] % (target, tt, tc))
         elif low.startswith('alter table'):
             parse_list = self.query[11:].strip().split()
             target = parse_list[0]
             if ' '.join(parse_list[1:3]).startswith('rename to'):
-                self.response.append(app_l[35][0] % (target, parse_list[-1]))
+                self.response.append(self.app_l[35][0] % (target, parse_list[-1]))
             elif ' '.join(parse_list[1:3]).startswith('rename column'):
-                self.response.append(app_l[37][0] % (parse_list[3], target, parse_list[-1]))
+                self.response.append(self.app_l[37][0] % (parse_list[3], target, parse_list[-1]))
             elif ' '.join(parse_list[1:3]).startswith('add column'):
-                self.response.append(app_l[39][0] % (target, parse_list[-2]))
+                self.response.append(self.app_l[39][0] % (target, parse_list[-2]))
             elif ' '.join(parse_list[1:3]).startswith('drop column'):
-                self.response.append(app_l[40][0] % (target, parse_list[-1]))
+                self.response.append(self.app_l[40][0] % (target, parse_list[-1]))
             self.clear_basebox()
             self.make_basebox()
         elif low.startswith('drop'):
@@ -429,13 +444,13 @@ class MyWorkWindow(QtWidgets.QWidget):
             comp_item = parse_part.lower().strip().split()[0]
             target = parse_part.strip().split()[1]
             if comp_item == 'view':
-                self.response.append(app_l[42][0] % target)
+                self.response.append(self.app_l[42][0] % target)
             elif comp_item == 'table':
                 self.clear_basebox()
                 self.make_basebox()
-                self.response.append(app_l[41][0] % target)
+                self.response.append(self.app_l[41][0] % target)
             elif comp_item == 'index':
-                self.response.append(app_l[38][0] % target)
+                self.response.append(self.app_l[38][0] % target)
     
             
         
