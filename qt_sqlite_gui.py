@@ -59,6 +59,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.makeMenu()
         self.b_n = ''
         
+    def setIcon(self, ln):
+      icon_g = QtGui.QIcon('galochka_16.png')
+      icon_m = QtGui.QIcon('minus_16.png')
+      if ln == 'en':
+         self.icon_e, self.icon_r = icon_g, icon_m
+      elif ln == 'ru':
+         self.icon_e, self.icon_r = icon_m, icon_g
+        
         
     def makeMenu(self):
         myMenu = self.menuBar.addMenu(self.app_l[0][0])
@@ -70,14 +78,15 @@ class MainWindow(QtWidgets.QMainWindow):
         action = myDB.addAction(self.app_l[5][0], self.commit_DB)
         action = myDB.addAction(self.app_l[6][0],  self.close_DB)
         menuLang = self.menuBar.addMenu(self.app_l[43][0])
-        action = menuLang.addAction(self.app_l[44][0], lambda ln='ru': self.setLanguage(ln))
-        action = menuLang.addAction(self.app_l[45][0], lambda ln='en': self.setLanguage(ln))
+        action = menuLang.addAction(self.icon_r, self.app_l[44][0], lambda ln='ru': self.setLanguage(ln))
+        action = menuLang.addAction(self.icon_e, self.app_l[45][0], lambda ln='en': self.setLanguage(ln))
         myAbout = self.menuBar.addMenu(self.app_l[7][0])
         action = myAbout.addAction(self.app_l[8][0], self.aboutProgramm)
         action = myAbout.addAction(self.app_l[9][0], self.aboutMe)
         
     def setLanguage(self, ln):
         self.app_l = lang[ln]
+        self.setIcon(ln)
         if self.start > 0:
             settings.setValue('Language', ln)
             self.main_update()
