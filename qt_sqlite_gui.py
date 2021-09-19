@@ -45,7 +45,7 @@ if settings.contains('Language'):
 else:
    menu_l = 'en'
    settings.setValue('Language', menu_l)
-#app_l = lang[menu_l]
+   
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self,parent=None):
@@ -77,9 +77,9 @@ class MainWindow(QtWidgets.QMainWindow):
         action = myAbout.addAction(self.app_l[9][0], self.aboutMe)
         
     def setLanguage(self, ln):
-        settings.setValue('Language', ln)
         self.app_l = lang[ln]
         if self.start > 0:
+            settings.setValue('Language', ln)
             self.main_update()
         self.start += 1
         
@@ -108,8 +108,7 @@ class MainWindow(QtWidgets.QMainWindow):
         QtWidgets.QMessageBox.information(None,self.app_l[14][0], self.app_l[15][0] + last_name)
         
     def greeting(self):
-        text_ch = self.app_l[16][0]
-        self.gr_lab = QtWidgets.QLabel(text_ch)
+        self.gr_lab = QtWidgets.QLabel(self.app_l[16][0])
         self.setCentralWidget(self.gr_lab) 
         
         
