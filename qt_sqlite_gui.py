@@ -105,6 +105,9 @@ class MainWindow(QtWidgets.QMainWindow):
     
             
     def create_DB(self):
+        """
+         This function create new DB
+        """
         s, ok = QtWidgets.QInputDialog.getText(None, self.app_l[10][0], self.app_l[11][0])
         if not ok: return
         if ok and not s:
